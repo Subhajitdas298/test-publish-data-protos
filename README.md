@@ -18,7 +18,8 @@ endpoint.
   bytes (`protoDataset` cache).
 - **`JsonDataService`** — reads from the repository and caches the JSON representation
   (`jsonDataset` cache).
-- **`DataController`** — exposes both services as REST endpoints.
+- **`DataController`** — exposes both services on a single URL, differentiated purely by
+  the `Accept` header (HTTP content negotiation).
 
 ## Data shape
 
@@ -32,17 +33,13 @@ That's `10 * 26 * 10,000 = 2,600,000` values, generated once and reused for ever
 
 ## API
 
-| Method | Path             | Description                                                  |
-|--------|------------------|----------------------------------------------------------------|
-| GET    | `/api/data`      | Returns the cached dataset as raw protobuf binary (`Root` message) |
-| GET    | `/api/data/json` | Returns the same cached dataset as JSON                       |
+There is a single endpoint. The representation is chosen purely by the `Accept` header
+(standard HTTP content negotiation) — there is no separate path for JSON.
 
-`/api/data` responds with content type `application/x-protobuf`. The body is the serialized
-bytes of the `Root` message defined in `test-data-protos` — decode it with
-`Root.parseFrom(bytes)` in any consumer that has the same proto package on its classpath.
-
-`/api/data/json` responds with content type `application/json`, using protobuf's standard
-JSON mapping (via `JsonFormat`).
+| Method | Path        | `Accept` header          | Response                                              |
+|--------|-------------|---------------------------|--------------------------------------------------------|
+| GET    | `/api/data` | `application/x-protobuf` | Raw protobuf binary — serialized bytes of the `Root` message. Decode with `Root.parseFrom(bytes)`. |
+| GET    | `/api/data` | `application/json`       | The same dataset as JSON, using protobuf's standard JSON mapping (via `JsonFormat`). |
 
 No authentication, no request parameters.
 
@@ -84,8 +81,8 @@ resolver if it's not already installed).
 Then:
 
 ```bash
-curl http://localhost:8080/api/data --output data.pb
-curl http://localhost:8080/api/data/json
+curl http://localhost:8080/api/data -H "Accept: application/x-protobuf" --output data.pb
+curl http://localhost:8080/api/data -H "Accept: application/json"
 ```
 
 ## Tech stack

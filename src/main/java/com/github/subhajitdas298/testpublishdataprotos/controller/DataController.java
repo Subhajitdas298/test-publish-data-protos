@@ -23,7 +23,7 @@ public class DataController {
         return protoDataService.getData();
     }
 
-    @GetMapping(value = "/api/data/json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/api/data", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getJsonData() throws InvalidProtocolBufferException {
         return jsonDataService.getData();
     }
