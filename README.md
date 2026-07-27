@@ -1,16 +1,17 @@
 # test-publish-data-protos
 
 A minimal Spring Boot (v4) web application, built with Java 24 and Gradle, that generates
-random test data on the fly using the protobuf message types from
-[`test-data-protos`](https://github.com/Subhajitdas298/test-data-protos) and exposes it
-over a fully open (unauthenticated) REST API.
+random test data using the protobuf message types from
+[`test-data-protos`](https://github.com/Subhajitdas298/test-data-protos) and publishes it
+as raw protobuf binary over a fully open (unauthenticated) REST API.
 
 There is no persistence/data layer — data is generated in a loop inside the service layer
-once at application startup and cached in memory for the lifetime of the app.
+and cached in memory using Spring's cache abstraction (`@Cacheable`), so the loop only
+runs once, on the first request.
 
 ## Data shape
 
-The generated dataset consists of:
+The generated dataset (a `Root` protobuf message) consists of:
 
 - **10 days** of data (`DataEntry.dates`, one `DateRecord` per day)
 - Each day has **26 fields** (`a`–`z`, matching the proto definition)
@@ -20,9 +21,13 @@ That's `10 * 26 * 10,000 = 2,600,000` values, generated once and reused for ever
 
 ## API
 
-| Method | Path        | Description                                          |
-|--------|-------------|-------------------------------------------------------|
-| GET    | `/api/data` | Returns the in-memory cached dataset as JSON          |
+| Method | Path        | Description                                                   |
+|--------|-------------|-----------------------------------------------------------------|
+| GET    | `/api/data` | Returns the cached dataset as raw protobuf binary (`Root` message) |
+
+Response content type is `application/x-protobuf`. The body is the serialized bytes of the
+`Root` message defined in `test-data-protos` — decode it with `Root.parseFrom(bytes)` in
+any consumer that has the same proto package on its classpath.
 
 No authentication, no request parameters.
 
@@ -64,7 +69,7 @@ resolver if it's not already installed).
 Then:
 
 ```bash
-curl http://localhost:8080/api/data
+curl http://localhost:8080/api/data --output data.pb
 ```
 
 ## Tech stack
@@ -73,4 +78,6 @@ curl http://localhost:8080/api/data
 - Java 24
 - Gradle (Kotlin DSL)
 - `com.github.subhajitdas298:test-data-protos` (protobuf-generated Java models)
-- `protobuf-java-util` (for JSON serialization of the protobuf messages)
+- `protobuf-java` (protobuf message serialization to raw binary)
+- Spring's cache abstraction (`spring-boot-starter-cache` + `@EnableCaching` + `@Cacheable`)
+  for in-memory caching of the generated dataset

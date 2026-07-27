@@ -3,7 +3,7 @@ package com.github.subhajitdas298.testpublishdataprotos.service;
 import com.github.subhajitdas298.testdataprotos.DataEntry;
 import com.github.subhajitdas298.testdataprotos.DateRecord;
 import com.github.subhajitdas298.testdataprotos.Root;
-import jakarta.annotation.PostConstruct;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -15,18 +15,8 @@ public class DataGeneratorService {
     private static final int RECORDS_PER_FIELD_PER_DAY = 10_000;
     private static final String FIELDS = "abcdefghijklmnopqrstuvwxyz";
 
-    private Root cachedData;
-
-    @PostConstruct
-    void init() {
-        cachedData = generateData();
-    }
-
+    @Cacheable("dataset")
     public Root getData() {
-        return cachedData;
-    }
-
-    private Root generateData() {
         DataEntry.Builder entryBuilder = DataEntry.newBuilder();
 
         for (int day = 0; day < DAYS; day++) {
