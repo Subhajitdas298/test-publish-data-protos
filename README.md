@@ -6,23 +6,23 @@ random test data on the fly using the protobuf message types from
 over a fully open (unauthenticated) REST API.
 
 There is no persistence/data layer — data is generated in a loop inside the service layer
-on every request.
+once at application startup and cached in memory for the lifetime of the app.
 
 ## Data shape
 
-Each request generates:
+The generated dataset consists of:
 
 - **10 days** of data (`DataEntry.dates`, one `DateRecord` per day)
 - Each day has **26 fields** (`a`–`z`, matching the proto definition)
 - Each field contains **10,000 randomly generated `double` records**
 
-That's `10 * 26 * 10,000 = 2,600,000` values per request.
+That's `10 * 26 * 10,000 = 2,600,000` values, generated once and reused for every request.
 
 ## API
 
-| Method | Path        | Description                                    |
-|--------|-------------|-------------------------------------------------|
-| GET    | `/api/data` | Generates and returns a fresh dataset as JSON  |
+| Method | Path        | Description                                          |
+|--------|-------------|-------------------------------------------------------|
+| GET    | `/api/data` | Returns the in-memory cached dataset as JSON          |
 
 No authentication, no request parameters.
 

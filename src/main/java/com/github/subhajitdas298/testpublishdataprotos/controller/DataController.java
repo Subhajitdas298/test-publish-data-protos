@@ -19,7 +19,7 @@ public class DataController {
 
     @GetMapping(value = "/api/data", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getData() throws InvalidProtocolBufferException {
-        Root root = dataGeneratorService.generateData();
+        Root root = dataGeneratorService.getData();
         return JsonFormat.printer().print(root);
     }
 }
