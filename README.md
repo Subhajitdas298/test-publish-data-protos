@@ -105,9 +105,13 @@ curl http://localhost:8080/api/data -H "Accept: application/json"
   connector handles each request on a virtual thread instead of a bounded platform-thread
   pool, so slow clients pulling the large (tens-of-MB) response bodies can't exhaust a
   fixed pool of OS threads.
-- **Response compression** (`server.compression.enabled: true`, applied to
-  `application/json` and `application/x-protobuf`) — meaningfully shrinks the ~50 MB JSON
-  and protobuf payloads over the wire.
+- **Response compression** (`server.compression.enabled: true`, applied only to
+  `application/json`) — shrinks the ~50 MB JSON response by roughly half over the wire.
+  Deliberately **not** applied to `application/x-protobuf`: its `double` fields are raw
+  8-byte IEEE-754 values, effectively high-entropy noise to a general-purpose compressor —
+  measured at ~5.7% size reduction (20.8 MB → 19.6 MB) versus ~52% for the JSON payload
+  (49.8 MB → 23.8 MB) for the same dataset, so compressing it would burn CPU for
+  negligible benefit.
 - **JVM flags for a scale-to-zero container** (see [`Dockerfile`](Dockerfile)):
   `-XX:+UseSerialGC` and `-XX:MaxRAMPercentage=75.0` (lower-footprint GC using most of the
   container's memory, since the JVM is the only process in it) and
