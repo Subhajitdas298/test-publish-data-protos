@@ -117,6 +117,12 @@ curl http://localhost:8080/api/data -H "Accept: application/json"
   container's memory, since the JVM is the only process in it) and
   `-XX:TieredStopAtLevel=1` (skips C2 warmup) — all aimed at cutting cold-start latency
   after the container app scales back up from zero.
+- **No HTTP-level caching** — both `/api/data` responses carry `Cache-Control: no-store`
+  and `Pragma: no-cache`, so no browser, proxy, or CDN in front of the app may serve a
+  cached copy; every request reaches this service. This is separate from (and doesn't
+  affect) the in-process Spring `@Cacheable` layers described above, which still avoid
+  recomputing the dataset on every call — gzip compression, in particular, is always
+  performed live per response, never precomputed or reused across requests.
 
 ## Deployment (Azure Container Apps)
 
