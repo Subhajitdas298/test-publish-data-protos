@@ -20,7 +20,7 @@ public class DataRepository {
     private static final String FIELDS = "abcdefghijklmnopqrstuvwxyz";
     private static final String DATASET_RESOURCE = "data/dataset.bin";
 
-    @Cacheable("rawDataset")
+    @Cacheable(value = "rawDataset", sync = true)
     public Root findData() {
         DoubleBuffer values = loadValues();
 
