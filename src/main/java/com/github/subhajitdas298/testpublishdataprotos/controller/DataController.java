@@ -4,10 +4,12 @@ import com.github.subhajitdas298.testpublishdataprotos.service.JsonDataService;
 import com.github.subhajitdas298.testpublishdataprotos.service.ProtoDataService;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@CrossOrigin(origins = "*")
 public class DataController {
 
     private final ProtoDataService protoDataService;
