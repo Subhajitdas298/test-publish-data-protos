@@ -1,0 +1,7 @@
+.git
+.gradle
+.idea
+*.iml
+build/*
+!build/libs
+!build/libs/*.jar
