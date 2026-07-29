@@ -99,6 +99,21 @@ curl http://localhost:8080/api/data -H "Accept: application/json"
 - Spring's cache abstraction (`spring-boot-starter-cache` + `@EnableCaching` + `@Cacheable`)
   for in-memory caching at both the repository and service layers
 
+## Performance
+
+- **Virtual threads** (`spring.threads.virtual.enabled: true`) — the embedded Tomcat
+  connector handles each request on a virtual thread instead of a bounded platform-thread
+  pool, so slow clients pulling the large (tens-of-MB) response bodies can't exhaust a
+  fixed pool of OS threads.
+- **Response compression** (`server.compression.enabled: true`, applied to
+  `application/json` and `application/x-protobuf`) — meaningfully shrinks the ~50 MB JSON
+  and protobuf payloads over the wire.
+- **JVM flags for a scale-to-zero container** (see [`Dockerfile`](Dockerfile)):
+  `-XX:+UseSerialGC` and `-XX:MaxRAMPercentage=75.0` (lower-footprint GC using most of the
+  container's memory, since the JVM is the only process in it) and
+  `-XX:TieredStopAtLevel=1` (skips C2 warmup) — all aimed at cutting cold-start latency
+  after the container app scales back up from zero.
+
 ## Deployment (Azure Container Apps)
 
 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) builds the jar, builds a
