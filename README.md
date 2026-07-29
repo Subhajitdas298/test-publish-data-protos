@@ -106,20 +106,23 @@ It authenticates to Azure with OIDC (`azure/login`, no client secret stored in G
 
 ### Azure resources you need to create once
 
+These have already been provisioned for this repo (see "Provisioned resources" below);
+this section is kept so the setup can be reproduced in another subscription.
+
 ```bash
 SUBSCRIPTION_ID=<your-subscription-id>
-RESOURCE_GROUP=rg-test-publish-data-protos
+RESOURCE_GROUP=data-protos
 LOCATION=eastus
-ACR_NAME=<globally-unique-name>          # e.g. testpublishdataprotosacr
-ENVIRONMENT_NAME=cae-test-publish-data-protos
-APP_NAME=test-publish-data-protos
+ACR_NAME=<globally-unique-name>          # e.g. dataprotosacr1234
+ENVIRONMENT_NAME=cae-data-protos
+APP_NAME=data-protos
 
 az account set --subscription "$SUBSCRIPTION_ID"
 
 # Resource group
 az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
 
-# Container registry
+# Container registry (Basic SKU — cheapest paid tier; ACR has no free tier)
 az acr create --resource-group "$RESOURCE_GROUP" --name "$ACR_NAME" --sku Basic
 
 # Container Apps environment
@@ -128,7 +131,10 @@ az provider register --namespace Microsoft.App
 az provider register --namespace Microsoft.OperationalInsights
 az containerapp env create --name "$ENVIRONMENT_NAME" --resource-group "$RESOURCE_GROUP" --location "$LOCATION"
 
-# Placeholder container app — the workflow only ever updates its image afterwards
+# Placeholder container app — the workflow only ever updates its image afterwards.
+# min-replicas 0 (scale-to-zero) keeps this within the Container Apps Consumption
+# free monthly grant (180,000 vCPU-seconds / 360,000 GiB-seconds / 2M requests):
+# the app costs nothing while idle and cold-starts on the next request.
 az containerapp create \
   --name "$APP_NAME" \
   --resource-group "$RESOURCE_GROUP" \
@@ -136,7 +142,7 @@ az containerapp create \
   --image mcr.microsoft.com/k8se/quickstart:latest \
   --target-port 8080 \
   --ingress external \
-  --min-replicas 1 --max-replicas 1
+  --min-replicas 0 --max-replicas 1
 
 # Let the app pull from ACR using its own managed identity
 az containerapp identity assign --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --system-assigned
@@ -165,23 +171,45 @@ CONTAINERAPP_ID=$(az containerapp show --name "$APP_NAME" --resource-group "$RES
 az role assignment create --assignee "$APP_ID" --role "Container Apps Contributor" --scope "$CONTAINERAPP_ID"
 ```
 
+### Provisioned resources
+
+The Azure resources below already exist in subscription `cfb23074-9c21-4bc5-aecb-4845d97a147e`
+("Azure subscription 1"), resource group **`data-protos`** (region `eastus`), created to
+minimize cost (Consumption-based Container Apps, scale-to-zero, Basic-tier ACR — the
+cheapest tier available since ACR has no free tier):
+
+| Resource                       | Name                                                                                   |
+|----------------------------------|-------------------------------------------------------------------------------------------|
+| Resource group                  | `data-protos`                                                                          |
+| Container Registry (Basic)      | `dataprotosacr2477` (`dataprotosacr2477.azurecr.io`)                                   |
+| Container Apps environment      | `cae-data-protos`                                                                      |
+| Container App (min-replicas 0)  | `data-protos` — `https://data-protos.gentlepond-37bc0af9.eastus.azurecontainerapps.io` |
+| AD app registration (OIDC)      | `gh-actions-data-protos` (client ID `23d82297-02c5-4608-a020-66c6af602b57`)            |
+
+The AD app has a federated credential scoped to
+`repo:Subhajitdas298/test-publish-data-protos:ref:refs/heads/main`, `AcrPush` on the
+registry, and `Container Apps Contributor` on the container app. The container app's
+own system-assigned identity has `AcrPull` on the registry so it can pull images.
+
 ### GitHub repo configuration
 
 **Settings → Secrets and variables → Actions → Secrets:**
 
 | Secret                 | Value                                              |
 |-------------------------|-----------------------------------------------------|
-| `AZURE_CLIENT_ID`       | `$APP_ID` from above                                |
-| `AZURE_TENANT_ID`       | your Azure AD tenant ID                             |
-| `AZURE_SUBSCRIPTION_ID` | `$SUBSCRIPTION_ID` from above                       |
+| `AZURE_CLIENT_ID`       | `23d82297-02c5-4608-a020-66c6af602b57`              |
+| `AZURE_TENANT_ID`       | `86c9c0f2-9014-48a2-99e7-785b23ee2769`              |
+| `AZURE_SUBSCRIPTION_ID` | `cfb23074-9c21-4bc5-aecb-4845d97a147e`              |
 | `PACKAGES_READ_TOKEN`   | a GitHub PAT with `read:packages`, so the workflow can resolve `test-data-protos` from GitHub Packages |
 
 **Settings → Secrets and variables → Actions → Variables:**
 
 | Variable                        | Value                                  |
 |-----------------------------------|-------------------------------------------|
-| `AZURE_CONTAINER_REGISTRY_NAME` | `$ACR_NAME` (registry name only, no `.azurecr.io`) |
-| `AZURE_RESOURCE_GROUP`          | `$RESOURCE_GROUP`                       |
-| `AZURE_CONTAINER_APP_NAME`      | `$APP_NAME`                             |
+| `AZURE_CONTAINER_REGISTRY_NAME` | `dataprotosacr2477`                      |
+| `AZURE_RESOURCE_GROUP`          | `data-protos`                            |
+| `AZURE_CONTAINER_APP_NAME`      | `data-protos`                            |
 
-Once those are set, any push to `main` (including a merged PR) triggers the workflow.
+These can't be set via the GitHub tools available to this session (setting an Actions
+secret requires client-side encryption with the repo's public key), so add them yourself
+in the GitHub UI. Once set, any push to `main` (including a merged PR) triggers the workflow.
