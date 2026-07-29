@@ -164,6 +164,15 @@ az ad app federated-credential create --id "$APP_ID" --parameters '{
   "subject": "repo:Subhajitdas298/test-publish-data-protos:ref:refs/heads/main",
   "audiences": ["api://AzureADTokenExchange"]
 }'
+```
+
+> **Note:** if this GitHub org/repo has the "use unique repository/owner ID in the
+> subject claim" OIDC setting enabled, the actual subject GitHub sends is
+> `repo:<owner>@<owner_id>/<repo>@<repo_id>:ref:refs/heads/main` instead of the plain
+> name form above — check the workflow's `azure/login` step for an `AADSTS700213`
+> error to find the exact subject it presented, then update the federated credential
+> to match. This repo's federated credential uses:
+> `repo:Subhajitdas298@20024190/test-publish-data-protos@1313942807:ref:refs/heads/main`.
 
 # Let the CI identity push images and update the container app
 az role assignment create --assignee "$APP_ID" --role AcrPush --scope "$ACR_ID"
@@ -187,9 +196,11 @@ cheapest tier available since ACR has no free tier):
 | AD app registration (OIDC)      | `gh-actions-data-protos` (client ID `23d82297-02c5-4608-a020-66c6af602b57`)            |
 
 The AD app has a federated credential scoped to
-`repo:Subhajitdas298/test-publish-data-protos:ref:refs/heads/main`, `AcrPush` on the
-registry, and `Container Apps Contributor` on the container app. The container app's
-own system-assigned identity has `AcrPull` on the registry so it can pull images.
+`repo:Subhajitdas298@20024190/test-publish-data-protos@1313942807:ref:refs/heads/main`
+(this repo has GitHub's immutable-ID OIDC subject format enabled — see the note above),
+`AcrPush` on the registry, and `Container Apps Contributor` on the container app. The
+container app's own system-assigned identity has `AcrPull` on the registry so it can
+pull images.
 
 ### GitHub repo configuration
 
