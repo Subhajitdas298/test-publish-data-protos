@@ -13,7 +13,7 @@ first request to either endpoint.
 
 ## Architecture
 
-- **`DataRepository`** (repository layer) — reads `data/dataset.bin` (2,600,000
+- **`DataRepository`** (repository layer) — reads `data/dataset.bin` (3,000,000
   precomputed `double`s, stored as big-endian 8-byte values) into a `DoubleBuffer` and
   builds the raw `Root` protobuf message from it, caching the result (`rawDataset` cache).
 - **`ProtoDataService`** — reads from the repository and caches the serialized protobuf
@@ -28,11 +28,11 @@ first request to either endpoint.
 The dataset (a `Root` protobuf message) consists of:
 
 - **1 day** of data (`DataEntry.dates`, one `DateRecord` per day)
-- Each day has **26 fields** (`a`–`z`, matching the proto definition)
-- Each field contains **100,000 precomputed `double` records**, read in order from
+- Only fields **`a`, `b` and `c`** are populated (the proto defines `a`–`z`; the rest are left empty)
+- Each populated field contains **1,000,000 precomputed `double` records**, read in order from
   `data/dataset.bin`
 
-That's `1 * 26 * 100,000 = 2,600,000` values, read from the bundled file once and reused
+That's `1 * 3 * 1,000,000 = 3,000,000` values, read from the bundled file once and reused
 for every request.
 
 ## API
