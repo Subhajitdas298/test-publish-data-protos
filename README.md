@@ -1,21 +1,20 @@
 # test-publish-data-protos
 
 A minimal Spring Boot (v4) web application, built with Java 24 and Gradle, that serves
-precomputed test data using the protobuf message types from
+generated test data using the protobuf message types from
 [`test-data-protos`](https://github.com/Subhajitdas298/test-data-protos) and publishes it
 over a fully open (unauthenticated) REST API — as raw protobuf binary or as JSON.
 
-There is no database — the repository layer builds the dataset from a precomputed binary
-array bundled as a resource (`src/main/resources/data/dataset.bin`), and every layer
-(repository + both services) caches its output via Spring's cache abstraction
-(`@Cacheable`), so the file is only read and the protobuf message only built once, on the
-first request to either endpoint.
+There is no database and no bundled data file — the repository layer generates the dataset
+from a fixed seed, and every layer (repository + both services) caches its output via
+Spring's cache abstraction (`@Cacheable`), so the protobuf message is only built once, on
+the first request to either endpoint.
 
 ## Architecture
 
-- **`DataRepository`** (repository layer) — reads `data/dataset.bin` (3,000,000
-  precomputed `double`s, stored as big-endian 8-byte values) into a `DoubleBuffer` and
-  builds the raw `Root` protobuf message from it, caching the result (`rawDataset` cache).
+- **`DataRepository`** (repository layer) — generates the 10,000,000 `double`s
+  of field `a` from a fixed seed and builds the raw `Root` protobuf message from them,
+  caching the result (`rawDataset` cache).
 - **`ProtoDataService`** — reads from the repository and caches the serialized protobuf
   bytes (`protoDataset` cache).
 - **`JsonDataService`** — reads from the repository and caches the JSON representation
@@ -28,11 +27,11 @@ first request to either endpoint.
 The dataset (a `Root` protobuf message) consists of:
 
 - **1 day** of data (`DataEntry.dates`, one `DateRecord` per day)
-- Only fields **`a`, `b` and `c`** are populated (the proto defines `a`–`z`; the rest are left empty)
-- Each populated field contains **1,000,000 precomputed `double` records**, read in order from
-  `data/dataset.bin`
+- Only field **`a`** is populated (the proto defines `a`–`z`; the rest are left empty)
+- Field `a` contains **10,000,000 `double` records**, generated from a fixed seed
+  (`SplittableRandom(0)`, uniform in `[0, 1000)`) so every start serves the same values
 
-That's `1 * 3 * 1,000,000 = 3,000,000` values, read from the bundled file once and reused
+That's `1 * 1 * 10,000,000 = 10,000,000` values (~80 MB of protobuf), generated once and reused
 for every request.
 
 ## API
