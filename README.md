@@ -5,20 +5,18 @@ generated test data using the protobuf message types from
 [`test-data-protos`](https://github.com/Subhajitdas298/test-data-protos) and publishes it
 over a fully open (unauthenticated) REST API — as raw protobuf binary or as JSON.
 
-There is no database and no bundled data file — the repository layer generates the dataset
-from a fixed seed, and every layer (repository + both services) caches its output via
-Spring's cache abstraction (`@Cacheable`), so the protobuf message is only built once, on
-the first request to either endpoint.
+There is no database. The datasets are precomputed protobuf binaries bundled as resources
+(`src/main/resources/data/dataset-<size>.bin`, one per sample size), read on first use and
+cached via Spring's cache abstraction (`@Cacheable`).
 
 ## Architecture
 
-- **`DataRepository`** (repository layer) — generates the 10,000,000 `double`s
-  of field `a` from a fixed seed and builds the raw `Root` protobuf message from them,
-  caching the result (`rawDataset` cache).
-- **`ProtoDataService`** — reads from the repository and caches the serialized protobuf
-  bytes (`protoDataset` cache).
-- **`JsonDataService`** — reads from the repository and caches the JSON representation
-  (`jsonDataset` cache).
+- **`DataRepository`** (repository layer) — loads the bundled `dataset-<size>.bin` for the
+  requested size (`rawDataset` cache). Each file is a serialized `Root` message, i.e. the
+  wire format itself.
+- **`ProtoDataService`** — serves those bytes as they are.
+- **`JsonDataService`** — parses the bytes into a `Root` and caches its JSON representation
+  per size (`jsonDataset` cache).
 - **`DataController`** — exposes both services on a single URL, differentiated purely by
   the `Accept` header (HTTP content negotiation).
 
@@ -28,13 +26,14 @@ The dataset (a `Root` protobuf message) consists of:
 
 - **1 day** of data (`DataEntry.dates`, one `DateRecord` per day)
 - Only field **`a`** is populated (the proto defines `a`–`z`; the rest are left empty)
-- Field `a` contains **10,000,000 `double` records**, generated from a fixed seed
-  (`SplittableRandom(0)`, uniform in `[0, 1000)`) so every start serves the same values
-
-That's `1 * 1 * 10,000,000 = 10,000,000` values (~80 MB of protobuf), generated once and reused
-for every request.
+- Field `a` contains the first **N `double` records** of one fixed sequence
+  (`SplittableRandom(0)`, uniform in `[0, 1000)`), with N one of 10,000 / 100,000 /
+  1,000,000 / 10,000,000 (~80 KB / 800 KB / 8 MB / 80 MB of protobuf) — one bundled file each
 
 ## API
+
+Optional query parameter `size` (10000, 100000, 1000000 or 10000000; default 10000000)
+picks which precomputed sample is served; other values get `400`.
 
 There is a single endpoint. The representation is chosen purely by the `Accept` header
 (standard HTTP content negotiation) — there is no separate path for JSON.

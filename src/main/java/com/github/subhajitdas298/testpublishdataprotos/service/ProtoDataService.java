@@ -1,7 +1,6 @@
 package com.github.subhajitdas298.testpublishdataprotos.service;
 
 import com.github.subhajitdas298.testpublishdataprotos.repository.DataRepository;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,8 +12,8 @@ public class ProtoDataService {
         this.dataRepository = dataRepository;
     }
 
-    @Cacheable("protoDataset")
+    // The bundled files already are the wire format, so they are served as they are.
     public byte[] getData(int size) {
-        return dataRepository.findData(size).toByteArray();
+        return dataRepository.findData(size);
     }
 }

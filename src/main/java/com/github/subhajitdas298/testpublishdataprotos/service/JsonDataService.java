@@ -18,7 +18,7 @@ public class JsonDataService {
 
     @Cacheable("jsonDataset")
     public String getData(int size) throws InvalidProtocolBufferException {
-        Root root = dataRepository.findData(size);
+        Root root = Root.parseFrom(dataRepository.findData(size));
         return JsonFormat.printer().print(root);
     }
 }
