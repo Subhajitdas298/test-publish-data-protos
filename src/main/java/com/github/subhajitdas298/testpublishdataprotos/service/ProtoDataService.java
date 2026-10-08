@@ -14,7 +14,7 @@ public class ProtoDataService {
     }
 
     @Cacheable("protoDataset")
-    public byte[] getData() {
-        return dataRepository.findData().toByteArray();
+    public byte[] getData(int size) {
+        return dataRepository.findData(size).toByteArray();
     }
 }
