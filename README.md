@@ -26,9 +26,13 @@ The dataset (a `Root` protobuf message) consists of:
 
 - **1 day** of data (`DataEntry.dates`, one `DateRecord` per day)
 - Only field **`a`** is populated (the proto defines `a`–`z`; the rest are left empty)
-- Field `a` contains the first **N `double` records** of one fixed sequence
-  (`SplittableRandom(0)`, uniform in `[0, 1000)`), with N one of 10,000 / 100,000 /
-  1,000,000 / 10,000,000 (~80 KB / 800 KB / 8 MB / 80 MB of protobuf) — one bundled file each
+- Field `a` contains **N `double` records**, N one of 10,000 / 100,000 / 1,000,000 /
+  10,000,000 (~80 KB / 800 KB / 8 MB / 80 MB of protobuf) — one bundled file each. Each file
+  is a synthetic **ML recall trend** over N training steps (values in `[0, 1]`): a fast rise
+  that saturates around 0.95, a slow late gain, a small epoch ripple, noise that shrinks as
+  training settles, and a few short dips. The files are produced by
+  [`scripts/generate_datasets.py`](scripts/generate_datasets.py) (seeded, so reruns are
+  identical); every size is the same curve at a different resolution
 
 ## API
 

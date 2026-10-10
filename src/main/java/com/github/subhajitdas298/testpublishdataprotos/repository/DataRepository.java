@@ -10,8 +10,8 @@ import java.util.Set;
 
 /**
  * Serves the precomputed protobuf-encoded datasets bundled in {@code data/dataset-<size>.bin}:
- * one {@code Root} message each, with a single day whose field {@code a} holds the first
- * {@code size} values of the same seeded sequence (uniform in [0, 1000)).
+ * one {@code Root} message each, with a single day whose field {@code a} holds a synthetic ML
+ * recall trend of {@code size} points (see scripts/generate_datasets.py).
  */
 @Repository
 public class DataRepository {
